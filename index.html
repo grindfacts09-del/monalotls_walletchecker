@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whitelist Eligibility Checker</title>
+    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Import Playful Font: Comic Neue --><link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom CSS variables for the sail colors and custom pink */
+        :root {
+            --base-sail: #FAF8F0;   /* Light, creamy beige for the overall background */
+            --card-sail: #EFEAD9;   /* Slightly darker, warmer beige for the checker box */
+            --custom-pink: #e68890; /* User's specific color */
+            --custom-pink-dark: #d46c76; /* Darker for hover */
+        }
+
+        /* Custom styles for the playful font, sail background, and dark brown text color */
+        body {
+            font-family: 'Comic Neue', cursive;
+            background-color: var(--base-sail); /* Using the light sail color */
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* Aligns content to the top */
+        }
+        /* Custom class for the dark brown text */
+        .text-dark-brown {
+            color: #4E342E;
+        }
+
+        /* Custom class for the button to use the specific hex code */
+        .btn-custom-pink {
+            background-color: var(--custom-pink);
+            color: white; /* Text must be white for contrast */
+        }
+        .btn-custom-pink:hover {
+            background-color: var(--custom-pink-dark);
+        }
+
+        /* Responsive spacing for the main content block */
+        .main-content {
+            margin-top: 10vh; /* Adjust this value to move the checker higher/lower */
+            flex-grow: 1; /* Allows it to take up available space */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* Centers items vertically within main-content */
+            width: 100%; /* Ensures it spans full width */
+            position: relative; /* For absolute positioning of the juice grab button */
+        }
+
+        /* Adjustments for smaller screens */
+        @media (max-width: 768px) {
+            .main-content {
+                margin-top: 5vh; /* Less margin on top for smaller screens */
+            }
+        }
+
+        /* Hide the juice grab button by default */
+        .juice-grab-button {
+            opacity: 0; /* Initially invisible */
+            cursor: pointer;
+            z-index: 10; /* Ensure it's above other content */
+            transition: opacity 0.3s ease; /* Smooth fade in/out */
+            width: 150px; /* Example size, adjust as needed */
+            height: 150px; /* Example size, adjust as needed */
+            background-color: transparent; /* Invisible background */
+            border: none;
+            position: absolute; 
+            
+            /* --- RESPONSIVE CENTERING FIX --- */
+            top: 50%; 
+            left: 50%;
+            transform: translate(-50%, -50%); /* Shifts the button to be perfectly centered */
+        }
+
+        /* Show the juice grab button when active */
+        .juice-grab-button.active {
+            opacity: 1; /* Visible when active (though the button itself is transparent) */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Left Logo Placeholder (NOW CLICKABLE) --><div class="absolute top-6 left-6 z-10 cursor-pointer" onclick="resetToCheckerMode()">
+        <img id="logoImg" src="checker_assets/logo.PNG" alt="Project Logo" class="h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-full">
+    </div>
+
+    <!-- Main Content Area: Centered horizontally, adjusted vertically --><div class="main-content">
+        <!-- The checker card - now transparent and borderless --><div class="w-full max-w-lg p-6 sm:p-8 rounded-xl mx-4">
+            
+            <!-- Checker Title and Description --><h1 id="mainTitle" class="text-3xl sm:text-4xl font-extrabold text-dark-brown mb-2 text-center flex items-center justify-center space-x-2">
+                <span class="w-3 h-3 bg-dark-brown rounded-full"></span>
+                <span>Check your Eligibility</span>
+            </h1>
+            <p id="subTitle" class="text-dark-brown/70 mb-6 sm:mb-8 text-center text-sm sm:text-base">Enter your Monad Wallet Address</p>
+            
+            <!-- Input Group --><div class="flex items-center justify-center space-x-2"> <!-- Use flex to align input and button horizontally --><input type="text" id="walletInput" placeholder="0x..." 
+                       class="flex-grow px-4 py-2 sm:px-5 sm:py-3 border border-gray-300 rounded-lg focus:ring-fuchsia-500 focus:border-fuchsia-500 text-dark-brown transition duration-150 shadow-sm text-sm sm:text-base"
+                       aria-label="Enter wallet address" style="background-color: var(--card-sail);"> <!-- Input background still slightly darker sail --><!-- Solid pink Search/Submit button --><button id="actionButton" onclick="checkWallet()" 
+                        class="px-4 py-2 sm:px-5 sm:py-3 text-base sm:text-lg font-semibold rounded-lg shadow-md transition duration-150 btn-custom-pink">
+                    <span>Search</span>
+                </button>
+            </div>
+
+            <!-- Result Display Area (Slightly smaller height and font) --><div id="resultContainer" class="mt-5 sm:mt-6 p-3 sm:p-4 text-center rounded-lg min-h-[50px] sm:min-h-[55px] flex flex-col items-center justify-center transition-all duration-300" style="background-color: var(--card-sail);"> 
+                <!-- Main Status Message --><p id="resultMessage" class="text-base sm:text-2xl font-bold text-dark-brown/50">Awaiting address input...</p>
+                <!-- Secondary Message (Hidden until check is run) --><p id="secondaryMessage" class="text-xs sm:text-sm text-dark-brown mt-1 hidden"></p>
+                <!-- Loading Spinner for Submission -->
+                <div id="loadingSpinner" class="hidden w-6 h-6 border-4 border-t-4 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        </div>
+
+        <!-- Image Placeholder below the checker --><div class="mt-8 mb-8 w-full flex justify-center">
+            <img id="mainArt" src="checker_assets/main_img.PNG" alt="Decorative Art" 
+                 class="max-w-[80vw] sm:max-w-xs md:max-w-sm lg:max-w-md h-auto block">
+        </div>
+
+        <!-- Invisible "Juice Grab" button at the bottom right of the main-content area --><!-- Only visible (opacity 1) if user is INELIGIBLE and clickable --><button id="juiceGrabButton" class="juice-grab-button" onclick="goToSubmissionMode()">
+            <!-- This button is intended to be invisible -->
+        </button>
+    </div>
+
+    <script type="module">
+        // --- FIREBASE IMPORTS ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+        // --- GLOBAL FIREBASE VARIABLES ---
+        let db;
+        let auth;
+        let isFirebaseReady = false;
+
+        // ===================================================================
+        // === CRITICAL FIX: HARDCODED FIREBASE CONFIG =======================
+        // ===================================================================
+        // This configuration is directly copied from your Firebase project settings.
+        // It ensures the application works when hosted locally or on GitHub Pages.
+        const LOCAL_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDguZ0Qphz2lug9y_1AI3oSTB8JFynY0x8", 
+            authDomain: "wallet-checker-3a737.firebaseapp.com", 
+            projectId: "wallet-checker-3a737", 
+            storageBucket: "wallet-checker-3a737.appspot.com", 
+            messagingSenderId: "723006694060", 
+            appId: "1:723006694060:web:24f81eb7d438ebb81cb509" 
+        };
+        
+        // This is the App ID used in the Firestore path (e.g., /artifacts/{appId}/...)
+        // When running here, it uses the injected __app_id. When running locally/GitHub, 
+        // it uses the App ID from your config.
+        const appId = typeof __app_id !== 'undefined' 
+            ? __app_id 
+            : "wallet-checker-3a737"; // Use Project ID or a similar consistent value for local pathing when the full App ID is not available
+
+        // Use the injected config (for Canvas) or the local hardcoded one (for Notepad++/GitHub)
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : LOCAL_FIREBASE_CONFIG;
+        
+        // The custom auth token is only available in the Canvas environment.
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' 
+            ? __initial_auth_token 
+            : null;
+        // ===================================================================
+
+        /**
+         * Initializes Firebase and authenticates the user.
+         */
+        async function initializeFirebase() {
+            try {
+                // Initial check to ensure we have a functional config
+                if (!firebaseConfig || !firebaseConfig.apiKey) {
+                    throw new Error("Firebase configuration is missing.");
+                }
+                
+                // Set debug level for logging in the console
+                setLogLevel('debug');
+                
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Authenticate using the provided token (in this Canvas) or anonymously (locally/GitHub)
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                isFirebaseReady = true;
+                console.log("Firebase initialized and user authenticated.");
+                console.log("User UID:", auth.currentUser.uid); // Log the user ID
+            } catch (error) {
+                console.error("Firebase initialization or authentication failed:", error);
+                console.error("Troubleshooting: Check 1) Hardcoded Config values, 2) Browser console logs, 3) Firestore/Auth Security Rules.");
+            }
+        }
+
+        // Initialize Firebase when the script runs
+        initializeFirebase();
+
+        // --- UI ELEMENTS AND CONSTANTS ---
+
+        // --- IMAGE PLACEHOLDERS ---
+        // NOTE: These should be updated to actual URLs when hosted on GitHub if you are using image files
+        const LOGO_PLACEHOLDER = "checker_assets/logo.PNG";
+        const CHECKER_ART_PLACEHOLDER = "checker_assets/main_img.PNG";
+        const SUBMISSION_ART_PLACEHOLDER = "checker_assets/final_juice.PNG"; 
+
+        // --- 1. DATA STORAGE: GTD (Guaranteed) WALLET LIST ---
+        const GTD_WALLETS_ARRAY = [
+            "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef", 
+            "0x111122223333444455556666777788889999aaaa", 
+        ];
+
+        // --- 2. DATA STORAGE: FCFS (First-Come, First-Served) WALLET LIST ---
+        const FCFS_WALLETS_ARRAY = [
+            "0xbbbbccccddddeeeeffff00001111222233334444", 
+            "0x111122223333444455556666777788889999aaaa", 
+        ];
+
+        const cleanAndCreateSet = (arr) => new Set(
+            arr.map(addr => addr.toLowerCase().trim().replace(/^0x/, ''))
+        );
+        
+        const GTD_WHITELIST = cleanAndCreateSet(GTD_WALLETS_ARRAY);
+        const FCFS_WHITELIST = cleanAndCreateSet(FCFS_WALLETS_ARRAY);
+
+        
+        const logoImg = document.getElementById('logoImg');
+        const mainTitle = document.getElementById('mainTitle');
+        const subTitle = document.getElementById('subTitle');
+        const walletInput = document.getElementById('walletInput');
+        const actionButton = document.getElementById('actionButton');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultMessage = document.getElementById('resultMessage');
+        const secondaryMessage = document.getElementById('secondaryMessage');
+        const mainArt = document.getElementById('mainArt');
+        const juiceGrabButton = document.getElementById('juiceGrabButton');
+        const loadingSpinner = document.getElementById('loadingSpinner'); 
+
+        let currentMode = 'checker'; 
+        let lastCheckedWallet = ''; 
+
+        // --- INITIAL STATE ---
+        logoImg.src = LOGO_PLACEHOLDER; 
+        mainArt.src = CHECKER_ART_PLACEHOLDER; 
+        resultContainer.style.backgroundColor = 'var(--card-sail)'; 
+
+        /**
+         * Show/Hide loading spinner and manage button state.
+         * @param {boolean} isLoading 
+         */
+        function setLoading(isLoading) {
+            actionButton.disabled = isLoading;
+            walletInput.disabled = isLoading;
+            if (isLoading) {
+                loadingSpinner.classList.remove('hidden');
+                resultMessage.classList.add('hidden');
+                actionButton.textContent = "Processing...";
+            } else {
+                loadingSpinner.classList.add('hidden');
+                resultMessage.classList.remove('hidden');
+                actionButton.textContent = currentMode === 'checker' ? 'Search' : 'Submit';
+            }
+        }
+
+        /**
+         * Resets the UI back to the initial eligibility checker mode.
+         */
+        window.resetToCheckerMode = function() {
+            if (currentMode === 'checker') return; 
+            currentMode = 'checker';
+            setLoading(false);
+
+            // Reset Titles
+            mainTitle.innerHTML = `<span class="w-3 h-3 bg-dark-brown rounded-full"></span><span>Check your Eligibility</span>`;
+            subTitle.textContent = 'Enter your Monad Wallet Address';
+
+            // Reset Input and Button
+            walletInput.value = ''; 
+            walletInput.placeholder = "0x...";
+            actionButton.onclick = checkWallet; 
+            
+            // Reset Result Area UI
+            resultContainer.className = "mt-5 sm:mt-6 p-3 sm:p-4 text-center rounded-lg min-h-[50px] sm:min-h-[55px] flex flex-col items-center justify-center transition-all duration-300";
+            resultContainer.style.backgroundColor = 'var(--card-sail)'; 
+
+            resultMessage.className = "text-base sm:text-2xl font-bold text-dark-brown/50";
+            resultMessage.textContent = "Awaiting address input...";
+            secondaryMessage.classList.add('hidden');
+
+            // Reset Art and Juice Grab Button
+            mainArt.src = CHECKER_ART_PLACEHOLDER;
+            juiceGrabButton.classList.remove('active');
+        }
+
+        /**
+         * Toggles the UI between the eligibility checker mode and the waiting list submission mode.
+         */
+        window.goToSubmissionMode = function() {
+            currentMode = 'submission';
+            setLoading(false);
+
+            // Update Titles
+            mainTitle.innerHTML = `<span class="w-3 h-3 bg-dark-brown rounded-full"></span><span>Final Juice for Lotls</span>`;
+            subTitle.textContent = 'Submit your wallet for a chance at GTD!'; 
+
+            // Update Input and Button
+            walletInput.value = lastCheckedWallet; 
+            walletInput.placeholder = "Your wallet for waiting list...";
+            actionButton.textContent = "Submit";
+            actionButton.onclick = submitWalletForWaitingList; 
+            
+            // Update Result Area
+            resultContainer.classList.remove('bg-green-100', 'border', 'border-green-400', 'shadow-lg', 'bg-red-100', 'border', 'border-red-400', 'bg-yellow-100', 'border', 'border-yellow-400');
+            resultContainer.classList.add('flex-col'); 
+            resultMessage.className = "text-base sm:text-2xl font-bold text-dark-brown/50";
+            resultMessage.textContent = "Submit your wallet below.";
+            secondaryMessage.textContent = "Few random wallets will be added to GTD or FCFS soon!";
+            secondaryMessage.classList.remove('hidden');
+
+            // Update Art
+            mainArt.src = SUBMISSION_ART_PLACEHOLDER;
+
+            // Hide the juice grab button in submission mode
+            juiceGrabButton.classList.remove('active');
+        }
+
+        /**
+         * Handles the wallet submission for the waiting list using Firestore.
+         */
+        window.submitWalletForWaitingList = async function() {
+            const rawAddress = walletInput.value;
+            setLoading(true);
+
+            // 1. Basic client-side validation for submission
+            if (!rawAddress || rawAddress.length < 10) {
+                setLoading(false);
+                resultContainer.classList.remove('bg-green-100', 'border', 'border-green-400', 'shadow-lg', 'bg-red-100', 'border', 'border-red-400');
+                resultContainer.classList.add('bg-yellow-100', 'border', 'border-yellow-400');
+                resultMessage.className = "text-base sm:text-xl font-bold text-yellow-700";
+                resultMessage.textContent = "Please enter a valid address.";
+                secondaryMessage.classList.add('hidden');
+                return;
+            }
+
+            // 2. Check Firebase readiness
+            if (!isFirebaseReady || !db || !auth.currentUser) {
+                setLoading(false);
+                resultContainer.classList.remove('bg-green-100', 'border', 'border-green-400', 'shadow-lg', 'bg-red-100', 'border', 'border-red-400');
+                resultContainer.classList.add('bg-yellow-100', 'border', 'border-yellow-400');
+                resultMessage.className = "text-base sm:text-xl font-bold text-yellow-700";
+                resultMessage.textContent = "System not ready. Check the console.";
+                secondaryMessage.classList.add('hidden');
+                console.error("Firebase not initialized or user not authenticated. Check hardcoded config and security rules.");
+                return;
+            }
+            
+            const cleanedAddress = rawAddress.toLowerCase().trim();
+            // Use Project ID as a fall back for the app ID in the path for local testing consistency
+            const pathAppId = firebaseConfig.projectId || appId;
+
+            try {
+                // 3. Define the public collection path: /artifacts/{pathAppId}/public/data/waitingList
+                const waitingListRef = collection(db, `artifacts/${pathAppId}/public/data/waitingList`);
+                
+                // 4. Submit the wallet address
+                await addDoc(waitingListRef, {
+                    walletAddress: cleanedAddress,
+                    timestamp: serverTimestamp(), 
+                    submittedBy: auth.currentUser.uid 
+                });
+
+                // 5. Success UI Update
+                setLoading(false);
+                resultContainer.classList.remove('bg-yellow-100', 'border', 'border-yellow-400', 'bg-red-100', 'border', 'border-red-400');
+                resultContainer.classList.add('bg-green-100', 'border', 'border-green-400', 'shadow-lg');
+                resultMessage.className = "text-xl sm:text-2xl font-extrabold text-green-700";
+                resultMessage.textContent = "Submitted Successfully!";
+                secondaryMessage.textContent = "Few random wallets will be added to GTD or FCFS soon!";
+                secondaryMessage.classList.remove('hidden');
+                
+                // Disable input/button after successful submission
+                walletInput.disabled = true;
+                actionButton.disabled = true;
+                actionButton.textContent = "Submitted";
+
+            } catch (error) {
+                // 6. Error UI Update
+                setLoading(false);
+                resultContainer.classList.remove('bg-green-100', 'border', 'border-green-400', 'shadow-lg', 'bg-yellow-100', 'border', 'border-yellow-400');
+                resultContainer.classList.add('bg-red-100', 'border', 'border-red-400', 'shadow-lg');
+                resultMessage.className = "text-base sm:text-xl font-bold text-red-700";
+                resultMessage.textContent = "Submission Failed!";
+                secondaryMessage.textContent = "Check console for details (e.g., security rules).";
+                secondaryMessage.classList.remove('hidden');
+                console.error("Error submitting wallet (Check security rules!):", error);
+
+                // Re-enable button for retry
+                actionButton.disabled = false;
+                walletInput.disabled = false;
+            }
+        }
+
+
+        /**
+         * Checks the entered wallet address against both GTD and FCFS lists.
+         */
+        window.checkWallet = function() {
+            const rawAddress = walletInput.value;
+            lastCheckedWallet = rawAddress; 
+
+            // Reset UI for new check (this clears old result colors/borders)
+            setLoading(false); // Ensure loading is off
+            resultContainer.className = "mt-5 sm:mt-6 p-3 sm:p-4 text-center rounded-lg min-h-[50px] sm:min-h-[55px] flex flex-col items-center justify-center transition-all duration-300";
+            secondaryMessage.classList.add('hidden');
+            juiceGrabButton.classList.remove('active'); 
+
+            // 1. Basic Validation
+            if (!rawAddress || rawAddress.length < 10) {
+                resultContainer.classList.add('bg-yellow-100', 'border', 'border-yellow-400');
+                resultMessage.className = "text-base sm:text-xl font-bold text-yellow-700";
+                resultMessage.textContent = "Please enter a valid address.";
+                return;
+            }
+
+            // 2. Clean Address and Format Check
+            const cleanedAddress = rawAddress.toLowerCase().trim().replace(/^0x/, '');
+
+            if (cleanedAddress.length < 5) {
+                resultContainer.classList.add('bg-yellow-100', 'border', 'border-yellow-400');
+                resultMessage.className = "text-base sm:text-xl font-bold text-yellow-700";
+                resultMessage.textContent = "Address format incorrect. Too short.";
+                return;
+            }
+
+            // 3. Perform Lookup against both lists
+            const isGTD = GTD_WHITELIST.has(cleanedAddress);
+            const isFCFS = FCFS_WHITELIST.has(cleanedAddress);
+            
+            let statusText = "";
+            let statusColorClass = "";
+            let secondaryText = "";
+
+            if (isGTD || isFCFS) {
+                // ELIGIBLE SCENARIOS
+                secondaryText = "Enjoy some juice while you wait!";
+                
+                if (isGTD && isFCFS) {
+                    statusText = "ELIGIBLE (GTD and FCFS)";
+                    statusColorClass = "text-green-700";
+                    resultContainer.classList.add('bg-green-100', 'border', 'border-green-400', 'shadow-lg');
+                } else if (isGTD) {
+                    statusText = "ELIGIBLE (GTD)";
+                    statusColorClass = "text-green-700";
+                    resultContainer.classList.add('bg-green-100', 'border', 'border-green-400', 'shadow-lg');
+                } else if (isFCFS) {
+                    statusText = "ELIGIBLE (FCFS)";
+                    statusColorClass = "text-green-600";
+                    resultContainer.classList.add('bg-green-50', 'border', 'border-green-300', 'shadow-md');
+                }
+            } else {
+                // INELIGIBLE SCENARIO
+                statusText = "INELIGIBLE";
+                secondaryText = "Sorry... You can try to grab that juice from below tho";
+                statusColorClass = "text-red-700";
+                resultContainer.classList.add('bg-red-100', 'border', 'border-red-400', 'shadow-lg');
+                juiceGrabButton.classList.add('active'); // Activate the juice grab button for ineligible users
+            }
+
+            // 4. Update UI
+            resultMessage.className = `text-xl sm:text-2xl font-extrabold ${statusColorClass} animate-pulse`;
+            resultMessage.textContent = statusText;
+            
+            secondaryMessage.textContent = secondaryText;
+            secondaryMessage.classList.remove('hidden'); 
+        }
+    </script>
+
+</body>
+</html>
