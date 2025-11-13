@@ -129,6 +129,7 @@
 
     <script type="module">
         // --- FIREBASE IMPORTS ---
+        // Using version 10.0.0 for compatibility
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
@@ -143,13 +144,14 @@
         // ===================================================================
         // === FALLBACK CONFIGURATION (For external servers like GitHub Pages)
         // ===================================================================
+        // **UPDATED WITH YOUR PROVIDED CONFIGURATION**
         const FALLBACK_FIREBASE_CONFIG = {
             apiKey: "AIzaSyDgUzQpahzLug0y_1AI3oStB0JFYnYOxI8", 
             authDomain: "wallet-checker-3a737.firebaseapp.com", 
             projectId: "wallet-checker-3a737", 
             storageBucket: "wallet-checker-3a737.firebasestorage.app", 
             messagingSenderId: "723006694060", 
-            appId: "1:723006694060:web:24f81eb7d438ebb81cb509" 
+            appId: "1:723006694060:web:24f81eb7d438ebb81cb509"
         };
 
         // ===================================================================
@@ -219,6 +221,7 @@
                 auth = getAuth(app);
 
                 // --- ROBUST AUTHENTICATION LOGIC ---
+                // Wait for the Auth state to be ready before proceeding
                 if (isCanvasEnvironment && initialAuthToken) {
                     try {
                         // 1. Try custom token first
