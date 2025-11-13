@@ -131,85 +131,140 @@
         // --- FIREBASE IMPORTS ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
         // --- GLOBAL FIREBASE VARIABLES ---
         let db;
         let auth;
         let isFirebaseReady = false;
-
+        let isCanvasEnvironment = false;
+        let firebaseInitPromise = null; // Promise holder for asynchronous initialization
+        
         // ===================================================================
-        // === CRITICAL FIX: HARDCODED FIREBASE CONFIG =======================
+        // === FALLBACK CONFIGURATION (For external servers like GitHub Pages)
         // ===================================================================
-        // This configuration is directly copied from your Firebase project settings.
-        // It ensures the application works when hosted locally or on GitHub Pages.
-        const LOCAL_FIREBASE_CONFIG = {
-            apiKey: "AIzaSyDguZ0Qphz2lug9y_1AI3oSTB8JFynY0x8", 
+        const FALLBACK_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDgUzQpahzLug0y_1AI3oStB0JFYnYOxI8", 
             authDomain: "wallet-checker-3a737.firebaseapp.com", 
             projectId: "wallet-checker-3a737", 
-            storageBucket: "wallet-checker-3a737.appspot.com", 
+            storageBucket: "wallet-checker-3a737.firebasestorage.app", 
             messagingSenderId: "723006694060", 
             appId: "1:723006694060:web:24f81eb7d438ebb81cb509" 
         };
-        
-        // This is the App ID used in the Firestore path (e.g., /artifacts/{appId}/...)
-        // When running here, it uses the injected __app_id. When running locally/GitHub, 
-        // it uses the App ID from your config.
-        const appId = typeof __app_id !== 'undefined' 
-            ? __app_id 
-            : "wallet-checker-3a737"; // Use Project ID or a similar consistent value for local pathing when the full App ID is not available
 
-        // Use the injected config (for Canvas) or the local hardcoded one (for Notepad++/GitHub)
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : LOCAL_FIREBASE_CONFIG;
+        // ===================================================================
+        // === CONFIGURATION DETERMINATION LOGIC (REFINED) ===================
+        // ===================================================================
+        let firebaseConfig = null;
+        let initialAuthToken = null;
+        let APP_ID = 'default-app-id'; 
         
-        // The custom auth token is only available in the Canvas environment.
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' 
-            ? __initial_auth_token 
-            : null;
+        if (typeof __firebase_config !== 'undefined') {
+            try {
+                // Canvas globals exist, use them
+                firebaseConfig = JSON.parse(__firebase_config);
+                // Use __app_id for the Firestore path (MANDATORY)
+                APP_ID = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId;
+                initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                isCanvasEnvironment = true;
+                console.log("Using Canvas Environment. App ID:", APP_ID);
+            } catch (e) {
+                console.error("Canvas config found but failed to parse. Falling back to hardcoded.", e);
+            }
+        }
+        
+        if (!firebaseConfig) {
+            firebaseConfig = FALLBACK_FIREBASE_CONFIG;
+            APP_ID = firebaseConfig.projectId; // Use projectId as fallback app ID
+            console.log("Using Hardcoded Fallback Configuration. App ID:", APP_ID);
+        }
         // ===================================================================
 
         /**
-         * Initializes Firebase and authenticates the user.
+         * Utility function to update the result display with status messages.
          */
-        async function initializeFirebase() {
+        function updateResultDisplay(message, messageClass, containerClass, hideSecondary = false) {
+            // 1. Reset/Set Static Classes
+            resultContainer.className = "mt-5 sm:mt-6 p-3 sm:p-4 text-center rounded-lg min-h-[50px] sm:min-h-[55px] flex flex-col items-center justify-center transition-all duration-300";
+            
+            // 2. Add Dynamic Classes safely by splitting the string (FIXED: resolves InvalidCharacterError)
+            resultContainer.classList.add(...containerClass.split(' ').filter(c => c), 'border', 'shadow-lg');
+            
+            resultContainer.style.backgroundColor = 'var(--card-sail)'; 
+            
+            resultMessage.className = `text-base sm:text-2xl font-bold ${messageClass}`;
+            resultMessage.textContent = message;
+            
+            if (hideSecondary) {
+                secondaryMessage.classList.add('hidden');
+            } else {
+                secondaryMessage.classList.remove('hidden');
+            }
+        }
+
+        
+        /**
+         * Sets up Firebase services and handles authentication (only if necessary). Returns a Promise.
+         */
+        async function setupFirebase() { 
             try {
-                // Initial check to ensure we have a functional config
-                if (!firebaseConfig || !firebaseConfig.apiKey) {
-                    throw new Error("Firebase configuration is missing.");
+                if (!firebaseConfig) {
+                    throw new Error("Firebase configuration object is missing or invalid.");
                 }
                 
-                // Set debug level for logging in the console
                 setLogLevel('debug');
                 
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                // Authenticate using the provided token (in this Canvas) or anonymously (locally/GitHub)
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
+                // --- ROBUST AUTHENTICATION LOGIC ---
+                if (isCanvasEnvironment && initialAuthToken) {
+                    try {
+                        // 1. Try custom token first
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        console.log("Signed in with Custom Token.");
+                    } catch (e) {
+                        // 2. Fall back to anonymous sign-in if custom token fails (ensures a credential exists for public writes)
+                        console.warn("Custom token failed. Falling back to anonymous sign-in.", e);
+                        await signInAnonymously(auth); 
+                        console.log("Signed in Anonymously.");
+                    }
                 } else {
+                    // For external environments or cases where no token is provided, sign in anonymously
                     await signInAnonymously(auth);
+                    console.log("Signed in Anonymously (External or No Token).");
                 }
-
+                
                 isFirebaseReady = true;
-                console.log("Firebase initialized and user authenticated.");
-                console.log("User UID:", auth.currentUser.uid); // Log the user ID
+                if (auth.currentUser) {
+                    console.log("Auth Status: READY. User UID:", auth.currentUser.uid);
+                } else {
+                    console.error("Auth Status: WARNING. User is null despite sign-in attempt.");
+                }
+                
+                // Update UI to show system is ready
+                updateResultDisplay(
+                    'System Ready. Enter address.', 
+                    'text-dark-brown/70', 
+                    'bg-gray-50'
+                );
+
+                return { db, auth };
             } catch (error) {
-                console.error("Firebase initialization or authentication failed:", error);
-                console.error("Troubleshooting: Check 1) Hardcoded Config values, 2) Browser console logs, 3) Firestore/Auth Security Rules.");
+                updateResultDisplay(
+                    'System Error. Check console.', 
+                    'text-red-700', 
+                    'bg-red-100 border-red-400', 
+                    true
+                );
+                console.error("FATAL: Firebase setup failed:", error);
+                throw error;
             }
         }
-
-        // Initialize Firebase when the script runs
-        initializeFirebase();
-
+        
+        
         // --- UI ELEMENTS AND CONSTANTS ---
-
-        // --- IMAGE PLACEHOLDERS ---
-        // NOTE: These should be updated to actual URLs when hosted on GitHub if you are using image files
         const LOGO_PLACEHOLDER = "checker_assets/logo.PNG";
         const CHECKER_ART_PLACEHOLDER = "checker_assets/main_img.PNG";
         const SUBMISSION_ART_PLACEHOLDER = "checker_assets/final_juice.PNG"; 
@@ -249,10 +304,14 @@
         let currentMode = 'checker'; 
         let lastCheckedWallet = ''; 
 
-        // --- INITIAL STATE ---
+        // --- INITIAL STATE & FIREBASE INIT ---
         logoImg.src = LOGO_PLACEHOLDER; 
         mainArt.src = CHECKER_ART_PLACEHOLDER; 
-        resultContainer.style.backgroundColor = 'var(--card-sail)'; 
+        
+        // Set initial loading status while Firebase initializes
+        updateResultDisplay("Initializing system...", "text-dark-brown/50", "bg-gray-50", true);
+        firebaseInitPromise = setupFirebase();
+
 
         /**
          * Show/Hide loading spinner and manage button state.
@@ -290,12 +349,12 @@
             actionButton.onclick = checkWallet; 
             
             // Reset Result Area UI
-            resultContainer.className = "mt-5 sm:mt-6 p-3 sm:p-4 text-center rounded-lg min-h-[50px] sm:min-h-[55px] flex flex-col items-center justify-center transition-all duration-300";
-            resultContainer.style.backgroundColor = 'var(--card-sail)'; 
-
-            resultMessage.className = "text-base sm:text-2xl font-bold text-dark-brown/50";
-            resultMessage.textContent = "Awaiting address input...";
-            secondaryMessage.classList.add('hidden');
+            updateResultDisplay(
+                "System Ready. Enter address.", 
+                "text-dark-brown/70", 
+                'bg-gray-50', 
+                true
+            );
 
             // Reset Art and Juice Grab Button
             mainArt.src = CHECKER_ART_PLACEHOLDER;
@@ -320,10 +379,11 @@
             actionButton.onclick = submitWalletForWaitingList; 
             
             // Update Result Area
-            resultContainer.classList.remove('bg-green-100', 'border', 'border-green-400', 'shadow-lg', 'bg-red-100', 'border', 'border-red-400', 'bg-yellow-100', 'border', 'border-yellow-400');
-            resultContainer.classList.add('flex-col'); 
-            resultMessage.className = "text-base sm:text-2xl font-bold text-dark-brown/50";
-            resultMessage.textContent = "Submit your wallet below.";
+            updateResultDisplay(
+                "Submit your wallet below.", 
+                "text-base sm:text-2xl font-bold text-dark-brown/50", 
+                'bg-gray-50'
+            );
             secondaryMessage.textContent = "Few random wallets will be added to GTD or FCFS soon!";
             secondaryMessage.classList.remove('hidden');
 
@@ -344,48 +404,73 @@
             // 1. Basic client-side validation for submission
             if (!rawAddress || rawAddress.length < 10) {
                 setLoading(false);
-                resultContainer.classList.remove('bg-green-100', 'border', 'border-green-400', 'shadow-lg', 'bg-red-100', 'border', 'border-red-400');
-                resultContainer.classList.add('bg-yellow-100', 'border', 'border-yellow-400');
-                resultMessage.className = "text-base sm:text-xl font-bold text-yellow-700";
-                resultMessage.textContent = "Please enter a valid address.";
-                secondaryMessage.classList.add('hidden');
+                updateResultDisplay(
+                    "Please enter a valid address.", 
+                    "text-base sm:text-xl font-bold text-yellow-700", 
+                    'bg-yellow-100 border-yellow-400', 
+                    true
+                );
                 return;
             }
 
-            // 2. Check Firebase readiness
-            if (!isFirebaseReady || !db || !auth.currentUser) {
+            // 2. Wait for Firebase initialization to complete
+            if (!isFirebaseReady) {
+                console.log("Waiting for Firebase initialization to complete...");
+                try {
+                    await firebaseInitPromise; 
+                    console.log("Initialization complete. Proceeding with submission.");
+                } catch (error) {
+                     setLoading(false);
+                     updateResultDisplay(
+                        "System not ready. Initialization failed.", 
+                        "text-base sm:text-xl font-bold text-red-700", 
+                        'bg-red-100 border-red-400', 
+                        true
+                    );
+                     console.error("Firebase initialization failed during submission wait:", error);
+                     return; 
+                }
+            }
+
+            // 3. Final APP_ID check and path construction
+            if (!APP_ID || APP_ID === 'default-app-id') {
                 setLoading(false);
-                resultContainer.classList.remove('bg-green-100', 'border', 'border-green-400', 'shadow-lg', 'bg-red-100', 'border', 'border-red-400');
-                resultContainer.classList.add('bg-yellow-100', 'border', 'border-yellow-400');
-                resultMessage.className = "text-base sm:text-xl font-bold text-yellow-700";
-                resultMessage.textContent = "System not ready. Check the console.";
-                secondaryMessage.classList.add('hidden');
-                console.error("Firebase not initialized or user not authenticated. Check hardcoded config and security rules.");
+                updateResultDisplay(
+                    "App ID missing. Cannot submit.", 
+                    "text-base sm:text-xl font-bold text-red-700", 
+                    'bg-red-100 border-red-400', 
+                    true
+                );
+                console.error("Submission blocked: APP_ID:", APP_ID);
                 return;
             }
             
             const cleanedAddress = rawAddress.toLowerCase().trim();
-            // Use Project ID as a fall back for the app ID in the path for local testing consistency
-            const pathAppId = firebaseConfig.projectId || appId;
+            // This is the collection path that MUST match your security rule: /artifacts/{appId}/public/data/waitingList
+            const collectionPath = `artifacts/${APP_ID}/public/data/waitingList`;
 
             try {
-                // 3. Define the public collection path: /artifacts/{pathAppId}/public/data/waitingList
-                const waitingListRef = collection(db, `artifacts/${pathAppId}/public/data/waitingList`);
+                // 4. Define the public collection path
+                const waitingListRef = collection(db, collectionPath);
                 
-                // 4. Submit the wallet address
+                // CRITICAL LOGGING: Log the exact path being attempted
+                console.log("ATTEMPTING WRITE TO COLLECTION:", collectionPath);
+                console.log("DOCUMENT DATA:", { walletAddress: cleanedAddress, timestamp: new Date().toISOString() });
+                
+                // 5. Submit the wallet address.
                 await addDoc(waitingListRef, {
                     walletAddress: cleanedAddress,
-                    timestamp: serverTimestamp(), 
-                    submittedBy: auth.currentUser.uid 
+                    timestamp: new Date().toISOString()
                 });
 
-                // 5. Success UI Update
+                // 6. Success UI Update
                 setLoading(false);
-                resultContainer.classList.remove('bg-yellow-100', 'border', 'border-yellow-400', 'bg-red-100', 'border', 'border-red-400');
-                resultContainer.classList.add('bg-green-100', 'border', 'border-green-400', 'shadow-lg');
-                resultMessage.className = "text-xl sm:text-2xl font-extrabold text-green-700";
-                resultMessage.textContent = "Submitted Successfully!";
-                secondaryMessage.textContent = "Few random wallets will be added to GTD or FCFS soon!";
+                updateResultDisplay(
+                    "Submitted Successfully!", 
+                    "text-xl sm:text-2xl font-extrabold text-green-700", 
+                    'bg-green-100 border-green-400'
+                );
+                secondaryMessage.textContent = "Your wallet is now on the waiting list!";
                 secondaryMessage.classList.remove('hidden');
                 
                 // Disable input/button after successful submission
@@ -394,15 +479,15 @@
                 actionButton.textContent = "Submitted";
 
             } catch (error) {
-                // 6. Error UI Update
+                // 7. Error UI Update
                 setLoading(false);
-                resultContainer.classList.remove('bg-green-100', 'border', 'border-green-400', 'shadow-lg', 'bg-yellow-100', 'border', 'border-yellow-400');
-                resultContainer.classList.add('bg-red-100', 'border', 'border-red-400', 'shadow-lg');
-                resultMessage.className = "text-base sm:text-xl font-bold text-red-700";
-                resultMessage.textContent = "Submission Failed!";
-                secondaryMessage.textContent = "Check console for details (e.g., security rules).";
-                secondaryMessage.classList.remove('hidden');
-                console.error("Error submitting wallet (Check security rules!):", error);
+                updateResultDisplay(
+                    "Submission Failed! (Check Console)", 
+                    "text-base sm:text-xl font-bold text-red-700", 
+                    'bg-red-100 border-red-400', 
+                    true
+                );
+                console.error("FINAL FAILURE: Error submitting wallet. Check path, rules, and network:", error);
 
                 // Re-enable button for retry
                 actionButton.disabled = false;
@@ -418,17 +503,18 @@
             const rawAddress = walletInput.value;
             lastCheckedWallet = rawAddress; 
 
-            // Reset UI for new check (this clears old result colors/borders)
-            setLoading(false); // Ensure loading is off
-            resultContainer.className = "mt-5 sm:mt-6 p-3 sm:p-4 text-center rounded-lg min-h-[50px] sm:min-h-[55px] flex flex-col items-center justify-center transition-all duration-300";
-            secondaryMessage.classList.add('hidden');
+            // Reset UI for new check 
+            setLoading(false); 
             juiceGrabButton.classList.remove('active'); 
 
             // 1. Basic Validation
             if (!rawAddress || rawAddress.length < 10) {
-                resultContainer.classList.add('bg-yellow-100', 'border', 'border-yellow-400');
-                resultMessage.className = "text-base sm:text-xl font-bold text-yellow-700";
-                resultMessage.textContent = "Please enter a valid address.";
+                updateResultDisplay(
+                    "Please enter a valid address.", 
+                    "text-base sm:text-xl font-bold text-yellow-700", 
+                    'bg-yellow-100 border-yellow-400', 
+                    true
+                );
                 return;
             }
 
@@ -436,9 +522,12 @@
             const cleanedAddress = rawAddress.toLowerCase().trim().replace(/^0x/, '');
 
             if (cleanedAddress.length < 5) {
-                resultContainer.classList.add('bg-yellow-100', 'border', 'border-yellow-400');
-                resultMessage.className = "text-base sm:text-xl font-bold text-yellow-700";
-                resultMessage.textContent = "Address format incorrect. Too short.";
+                updateResultDisplay(
+                    "Address format incorrect. Too short.", 
+                    "text-base sm:text-xl font-bold text-yellow-700", 
+                    'bg-yellow-100 border-yellow-400', 
+                    true
+                );
                 return;
             }
 
@@ -449,6 +538,7 @@
             let statusText = "";
             let statusColorClass = "";
             let secondaryText = "";
+            let containerClass = "";
 
             if (isGTD || isFCFS) {
                 // ELIGIBLE SCENARIOS
@@ -457,29 +547,32 @@
                 if (isGTD && isFCFS) {
                     statusText = "ELIGIBLE (GTD and FCFS)";
                     statusColorClass = "text-green-700";
-                    resultContainer.classList.add('bg-green-100', 'border', 'border-green-400', 'shadow-lg');
+                    containerClass = 'bg-green-100 border-green-400';
                 } else if (isGTD) {
                     statusText = "ELIGIBLE (GTD)";
                     statusColorClass = "text-green-700";
-                    resultContainer.classList.add('bg-green-100', 'border', 'border-green-400', 'shadow-lg');
+                    containerClass = 'bg-green-100 border-green-400';
                 } else if (isFCFS) {
                     statusText = "ELIGIBLE (FCFS)";
                     statusColorClass = "text-green-600";
-                    resultContainer.classList.add('bg-green-50', 'border', 'border-green-300', 'shadow-md');
+                    containerClass = 'bg-green-50 border-green-300';
                 }
             } else {
                 // INELIGIBLE SCENARIO
                 statusText = "INELIGIBLE";
                 secondaryText = "Sorry... You can try to grab that juice from below tho";
                 statusColorClass = "text-red-700";
-                resultContainer.classList.add('bg-red-100', 'border', 'border-red-400', 'shadow-lg');
+                containerClass = 'bg-red-100 border-red-400';
                 juiceGrabButton.classList.add('active'); // Activate the juice grab button for ineligible users
             }
 
             // 4. Update UI
-            resultMessage.className = `text-xl sm:text-2xl font-extrabold ${statusColorClass} animate-pulse`;
-            resultMessage.textContent = statusText;
-            
+            updateResultDisplay(
+                statusText, 
+                `text-xl sm:text-2xl font-extrabold ${statusColorClass} animate-pulse`, 
+                containerClass, 
+                false
+            );
             secondaryMessage.textContent = secondaryText;
             secondaryMessage.classList.remove('hidden'); 
         }
