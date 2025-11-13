@@ -4,17 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Whitelist Eligibility Checker</title>
-    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Import Playful Font: Comic Neue --><link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
-    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Import Playful Font: Comic Neue -->
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
         /* Custom CSS variables for the sail colors and custom pink */
         :root {
             --base-sail: #FAF8F0;   /* Light, creamy beige for the overall background */
             --card-sail: #EFEAD9;   /* Slightly darker, warmer beige for the checker box */
-            --custom-pink: #e68890; /* User's specific color */
-            --custom-pink-dark: #d46c76; /* Darker for hover */
+            --custom-pink: #e68890; /* FIX: Re-inserted User's specific color */
+            --custom-pink-dark: #d46c76; /* FIX: Re-inserted Darker for hover */
         }
 
         /* Custom styles for the playful font, sail background, and dark brown text color */
@@ -68,16 +70,17 @@
             cursor: pointer;
             z-index: 10; /* Ensure it's above other content */
             transition: opacity 0.3s ease; /* Smooth fade in/out */
-            width: 150px; /* Example size, adjust as needed */
-            height: 150px; /* Example size, adjust as needed */
+            width: 130px; /* Example size, adjust as needed */
+            height: 140px; /* Example size, adjust as needed */
             background-color: transparent; /* Invisible background */
             border: none;
             position: absolute; 
-            
+
             /* --- RESPONSIVE CENTERING FIX --- */
-            top: 50%; 
-            left: 50%;
+            top: 57%; 
+            left: 52%;
             transform: translate(-50%, -50%); /* Shifts the button to be perfectly centered */
+            /* --- END FIX --- */
         }
 
         /* Show the juice grab button when active */
@@ -88,186 +91,127 @@
 </head>
 <body>
 
-    <!-- Top Left Logo Placeholder (NOW CLICKABLE) --><div class="absolute top-6 left-6 z-10 cursor-pointer" onclick="resetToCheckerMode()">
-        <img id="logoImg" src="checker_assets/logo.PNG" alt="Project Logo" class="h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-full">
+    <!-- Top Left Logo Placeholder (NOW CLICKABLE) -->
+    <div class="absolute top-6 left-6 z-10 cursor-pointer" onclick="resetToCheckerMode()">
+        <img id="logoImg" src="https://placehold.co/60x60/0d9488/ffffff?text=LOGO" alt="Project Logo" class="h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-full">
     </div>
 
-    <!-- Main Content Area: Centered horizontally, adjusted vertically --><div class="main-content">
-        <!-- The checker card - now transparent and borderless --><div class="w-full max-w-lg p-6 sm:p-8 rounded-xl mx-4">
+    <!-- Main Content Area: Centered horizontally, adjusted vertically -->
+    <div class="main-content">
+        <!-- The checker card - now transparent and borderless -->
+        <div class="w-full max-w-lg p-6 sm:p-8 rounded-xl mx-4">
             
-            <!-- Checker Title and Description --><h1 id="mainTitle" class="text-3xl sm:text-4xl font-extrabold text-dark-brown mb-2 text-center flex items-center justify-center space-x-2">
+            <!-- Checker Title and Description -->
+            <h1 id="mainTitle" class="text-3xl sm:text-4xl font-extrabold text-dark-brown mb-2 text-center flex items-center justify-center space-x-2">
                 <span class="w-3 h-3 bg-dark-brown rounded-full"></span>
                 <span>Check your Eligibility</span>
             </h1>
             <p id="subTitle" class="text-dark-brown/70 mb-6 sm:mb-8 text-center text-sm sm:text-base">Enter your Monad Wallet Address</p>
             
-            <!-- Input Group --><div class="flex items-center justify-center space-x-2"> <!-- Use flex to align input and button horizontally --><input type="text" id="walletInput" placeholder="0x..." 
+            <!-- Input Group -->
+            <div class="flex items-center justify-center space-x-2">
+                <input type="text" id="walletInput" placeholder="0x..." 
                        class="flex-grow px-4 py-2 sm:px-5 sm:py-3 border border-gray-300 rounded-lg focus:ring-fuchsia-500 focus:border-fuchsia-500 text-dark-brown transition duration-150 shadow-sm text-sm sm:text-base"
-                       aria-label="Enter wallet address" style="background-color: var(--card-sail);"> <!-- Input background still slightly darker sail --><!-- Solid pink Search/Submit button --><button id="actionButton" onclick="checkWallet()" 
+                       aria-label="Enter wallet address" style="background-color: var(--card-sail);">
+                <button id="actionButton" onclick="checkWallet()" 
                         class="px-4 py-2 sm:px-5 sm:py-3 text-base sm:text-lg font-semibold rounded-lg shadow-md transition duration-150 btn-custom-pink">
                     <span>Search</span>
                 </button>
             </div>
 
-            <!-- Result Display Area (Slightly smaller height and font) --><div id="resultContainer" class="mt-5 sm:mt-6 p-3 sm:p-4 text-center rounded-lg min-h-[50px] sm:min-h-[55px] flex flex-col items-center justify-center transition-all duration-300" style="background-color: var(--card-sail);"> 
-                <!-- Main Status Message --><p id="resultMessage" class="text-base sm:text-2xl font-bold text-dark-brown/50">Awaiting address input...</p>
-                <!-- Secondary Message (Hidden until check is run) --><p id="secondaryMessage" class="text-xs sm:text-sm text-dark-brown mt-1 hidden"></p>
-                <!-- Loading Spinner for Submission -->
-                <div id="loadingSpinner" class="hidden w-6 h-6 border-4 border-t-4 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+            <!-- Result Display Area (Slightly smaller height and font) -->
+            <div id="resultContainer" class="mt-5 sm:mt-6 p-3 sm:p-4 text-center rounded-lg min-h-[50px] sm:min-h-[55px] flex flex-col items-center justify-center transition-all duration-300" style="background-color: var(--card-sail);"> 
+                <!-- Main Status Message -->
+                <p id="resultMessage" class="text-base sm:text-2xl font-bold text-dark-brown/50">Awaiting address input...</p>
+                <!-- Secondary Message (Hidden until check is run) -->
+                <p id="secondaryMessage" class="text-xs sm:text-sm text-dark-brown mt-1 hidden"></p>
             </div>
         </div>
 
-        <!-- Image Placeholder below the checker --><div class="mt-8 mb-8 w-full flex justify-center">
-            <img id="mainArt" src="checker_assets/main_img.PNG" alt="Decorative Art" 
+        <!-- Image Placeholder below the checker -->
+        <div class="mt-8 mb-8 w-full flex justify-center">
+            <img id="mainArt" src="https://placehold.co/300x300/EFEAD9/4E342E?text=YOUR+ART+HERE" alt="Decorative Art" 
                  class="max-w-[80vw] sm:max-w-xs md:max-w-sm lg:max-w-md h-auto block">
         </div>
 
-        <!-- Invisible "Juice Grab" button at the bottom right of the main-content area --><!-- Only visible (opacity 1) if user is INELIGIBLE and clickable --><button id="juiceGrabButton" class="juice-grab-button" onclick="goToSubmissionMode()">
+        <!-- Invisible "Juice Grab" button at the bottom right of the main-content area -->
+        <button id="juiceGrabButton" class="juice-grab-button" onclick="goToSubmissionMode()">
             <!-- This button is intended to be invisible -->
         </button>
     </div>
 
+    <!-- FIREBASE (modular) -->
     <script type="module">
-        // --- FIREBASE IMPORTS ---
-        // Using version 10.0.0 for compatibility
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+        // --- Import Firebase modular SDK ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-        // --- GLOBAL FIREBASE VARIABLES ---
-        let db;
-        let auth;
-        let isFirebaseReady = false;
-        let isCanvasEnvironment = false;
-        let firebaseInitPromise = null; // Promise holder for asynchronous initialization
-        
-        // ===================================================================
-        // === FALLBACK CONFIGURATION (For external servers like GitHub Pages)
-        // ===================================================================
-        // **UPDATED WITH YOUR PROVIDED CONFIGURATION**
-        const FALLBACK_FIREBASE_CONFIG = {
-            apiKey: "AIzaSyDgUzQpahzLug0y_1AI3oStB0JFYnYOxI8", 
-            authDomain: "wallet-checker-3a737.firebaseapp.com", 
-            projectId: "wallet-checker-3a737", 
-            storageBucket: "wallet-checker-3a737.firebasestorage.app", 
-            messagingSenderId: "723006694060", 
+        // --- Use your provided Firebase config from the project screenshot ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyD9LgQpahZLugPy_IA1aSTo8lDJFjYNxOI8",
+            authDomain: "wallet-checker-3a737.firebaseapp.com",
+            projectId: "wallet-checker-3a737",
+            storageBucket: "wallet-checker-3a737.firebasestorage.app",
+            messagingSenderId: "723006694060",
             appId: "1:723006694060:web:24f81eb7d438ebb81cb509"
         };
 
-        // ===================================================================
-        // === CONFIGURATION DETERMINATION LOGIC (REFINED) ===================
-        // ===================================================================
-        let firebaseConfig = null;
-        let initialAuthToken = null;
-        let APP_ID = 'default-app-id'; 
-        
-        if (typeof __firebase_config !== 'undefined') {
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Expose function globally to be used by inline onclick in the page
+        window.submitWalletForWaitingList = async function submitWalletForWaitingList() {
+            const rawAddress = document.getElementById('walletInput').value;
+
+            // Basic client-side validation for submission
+            if (!rawAddress || rawAddress.length < 10) {
+                const rc = document.getElementById('resultContainer');
+                const rm = document.getElementById('resultMessage');
+                const sm = document.getElementById('secondaryMessage');
+
+                rc.classList.add('bg-yellow-100', 'border', 'border-yellow-400');
+                rm.className = "text-base sm:text-xl font-bold text-yellow-700";
+                rm.textContent = "Please enter a valid address for submission.";
+                sm.classList.add('hidden');
+                return;
+            }
+
             try {
-                // Canvas globals exist, use them
-                firebaseConfig = JSON.parse(__firebase_config);
-                // Use __app_id for the Firestore path (MANDATORY)
-                APP_ID = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId;
-                initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                isCanvasEnvironment = true;
-                console.log("Using Canvas Environment. App ID:", APP_ID);
-            } catch (e) {
-                console.error("Canvas config found but failed to parse. Falling back to hardcoded.", e);
+                // Save to collection 'waitingList' (Option A as requested)
+                await addDoc(collection(db, 'waitingList'), {
+                    wallet: rawAddress,
+                    createdAt: serverTimestamp()
+                });
+
+                // Update UI on success
+                const rc = document.getElementById('resultContainer');
+                const rm = document.getElementById('resultMessage');
+                const sm = document.getElementById('secondaryMessage');
+
+                rc.classList.remove('bg-yellow-100', 'border', 'border-yellow-400', 'bg-red-100', 'border', 'border-red-400');
+                rc.classList.add('bg-green-100', 'border', 'border-green-400', 'shadow-lg');
+                rm.className = "text-xl sm:text-2xl font-extrabold text-green-700 animate-pulse";
+                rm.textContent = "Submitted!";
+                sm.textContent = "Few random wallets will be added to GTD or FCFS soon!";
+                sm.classList.remove('hidden');
+
+                // Optionally disable input/button after successful submission
+                document.getElementById('walletInput').disabled = true;
+                const actionButton = document.getElementById('actionButton');
+                actionButton.disabled = true;
+                actionButton.textContent = "Submitted";
+
+            } catch (err) {
+                console.error('Firestore write error', err);
+                const rm = document.getElementById('resultMessage');
+                rm.className = "text-base sm:text-xl font-bold text-red-700";
+                rm.textContent = "Error submitting wallet. Try again.";
             }
         }
-        
-        if (!firebaseConfig) {
-            firebaseConfig = FALLBACK_FIREBASE_CONFIG;
-            APP_ID = firebaseConfig.projectId; // Use projectId as fallback app ID
-            console.log("Using Hardcoded Fallback Configuration. App ID:", APP_ID);
-        }
-        // ===================================================================
+    </script>
 
-        /**
-         * Utility function to update the result display with status messages.
-         */
-        function updateResultDisplay(message, messageClass, containerClass, hideSecondary = false) {
-            // 1. Reset/Set Static Classes
-            resultContainer.className = "mt-5 sm:mt-6 p-3 sm:p-4 text-center rounded-lg min-h-[50px] sm:min-h-[55px] flex flex-col items-center justify-center transition-all duration-300";
-            
-            // 2. Add Dynamic Classes safely by splitting the string (FIXED: resolves InvalidCharacterError)
-            resultContainer.classList.add(...containerClass.split(' ').filter(c => c), 'border', 'shadow-lg');
-            
-            resultContainer.style.backgroundColor = 'var(--card-sail)'; 
-            
-            resultMessage.className = `text-base sm:text-2xl font-bold ${messageClass}`;
-            resultMessage.textContent = message;
-            
-            if (hideSecondary) {
-                secondaryMessage.classList.add('hidden');
-            } else {
-                secondaryMessage.classList.remove('hidden');
-            }
-        }
-
-        
-        /**
-         * Sets up Firebase services and handles authentication (only if necessary). Returns a Promise.
-         */
-        async function setupFirebase() { 
-            try {
-                if (!firebaseConfig) {
-                    throw new Error("Firebase configuration object is missing or invalid.");
-                }
-                
-                setLogLevel('debug');
-                
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                // --- ROBUST AUTHENTICATION LOGIC ---
-                // Wait for the Auth state to be ready before proceeding
-                if (isCanvasEnvironment && initialAuthToken) {
-                    try {
-                        // 1. Try custom token first
-                        await signInWithCustomToken(auth, initialAuthToken);
-                        console.log("Signed in with Custom Token.");
-                    } catch (e) {
-                        // 2. Fall back to anonymous sign-in if custom token fails (ensures a credential exists for public writes)
-                        console.warn("Custom token failed. Falling back to anonymous sign-in.", e);
-                        await signInAnonymously(auth); 
-                        console.log("Signed in Anonymously.");
-                    }
-                } else {
-                    // For external environments or cases where no token is provided, sign in anonymously
-                    await signInAnonymously(auth);
-                    console.log("Signed in Anonymously (External or No Token).");
-                }
-                
-                isFirebaseReady = true;
-                if (auth.currentUser) {
-                    console.log("Auth Status: READY. User UID:", auth.currentUser.uid);
-                } else {
-                    console.error("Auth Status: WARNING. User is null despite sign-in attempt.");
-                }
-                
-                // Update UI to show system is ready
-                updateResultDisplay(
-                    'System Ready. Enter address.', 
-                    'text-dark-brown/70', 
-                    'bg-gray-50'
-                );
-
-                return { db, auth };
-            } catch (error) {
-                updateResultDisplay(
-                    'System Error. Check console.', 
-                    'text-red-700', 
-                    'bg-red-100 border-red-400', 
-                    true
-                );
-                console.error("FATAL: Firebase setup failed:", error);
-                throw error;
-            }
-        }
-        
-        
-        // --- UI ELEMENTS AND CONSTANTS ---
+    <script>
+        // --- IMAGE PLACEHOLDERS ---
         const LOGO_PLACEHOLDER = "checker_assets/logo.PNG";
         const CHECKER_ART_PLACEHOLDER = "checker_assets/main_img.PNG";
         const SUBMISSION_ART_PLACEHOLDER = "checker_assets/final_juice.PNG"; 
@@ -280,8 +224,8 @@
 
         // --- 2. DATA STORAGE: FCFS (First-Come, First-Served) WALLET LIST ---
         const FCFS_WALLETS_ARRAY = [
-            "0xbbbbccccddddeeeeffff00001111222233334444", 
-            "0x111122223333444455556666777788889999aaaa", 
+            "0xbbbbccccddddeeeeffff00001111222233334444",
+            "0x111122223333444455556666777788889999aaaa",
         ];
 
         const cleanAndCreateSet = (arr) => new Set(
@@ -302,91 +246,65 @@
         const secondaryMessage = document.getElementById('secondaryMessage');
         const mainArt = document.getElementById('mainArt');
         const juiceGrabButton = document.getElementById('juiceGrabButton');
-        const loadingSpinner = document.getElementById('loadingSpinner'); 
 
-        let currentMode = 'checker'; 
-        let lastCheckedWallet = ''; 
+        let currentMode = 'checker'; // 'checker' or 'submission'
+        let lastCheckedWallet = ''; // Store the last wallet for submission if ineligible
 
-        // --- INITIAL STATE & FIREBASE INIT ---
+        // --- INITIAL STATE ---
         logoImg.src = LOGO_PLACEHOLDER; 
         mainArt.src = CHECKER_ART_PLACEHOLDER; 
-        
-        // Set initial loading status while Firebase initializes
-        updateResultDisplay("Initializing system...", "text-dark-brown/50", "bg-gray-50", true);
-        firebaseInitPromise = setupFirebase();
+        resultContainer.style.backgroundColor = 'var(--card-sail)'; 
 
+        function resetToCheckerMode() {
+            if (currentMode === 'checker') return; // Don't reset if already in checker mode
 
-        /**
-         * Show/Hide loading spinner and manage button state.
-         * @param {boolean} isLoading 
-         */
-        function setLoading(isLoading) {
-            actionButton.disabled = isLoading;
-            walletInput.disabled = isLoading;
-            if (isLoading) {
-                loadingSpinner.classList.remove('hidden');
-                resultMessage.classList.add('hidden');
-                actionButton.textContent = "Processing...";
-            } else {
-                loadingSpinner.classList.add('hidden');
-                resultMessage.classList.remove('hidden');
-                actionButton.textContent = currentMode === 'checker' ? 'Search' : 'Submit';
-            }
-        }
-
-        /**
-         * Resets the UI back to the initial eligibility checker mode.
-         */
-        window.resetToCheckerMode = function() {
-            if (currentMode === 'checker') return; 
             currentMode = 'checker';
-            setLoading(false);
 
             // Reset Titles
             mainTitle.innerHTML = `<span class="w-3 h-3 bg-dark-brown rounded-full"></span><span>Check your Eligibility</span>`;
             subTitle.textContent = 'Enter your Monad Wallet Address';
 
             // Reset Input and Button
-            walletInput.value = ''; 
+            walletInput.value = ''; // Clear the input
             walletInput.placeholder = "0x...";
-            actionButton.onclick = checkWallet; 
+            actionButton.textContent = "Search";
+            actionButton.onclick = checkWallet; // Reset button action
+            walletInput.disabled = false;
+            actionButton.disabled = false;
             
             // Reset Result Area UI
-            updateResultDisplay(
-                "System Ready. Enter address.", 
-                "text-dark-brown/70", 
-                'bg-gray-50', 
-                true
-            );
+            resultContainer.className = "mt-5 sm:mt-6 p-3 sm:p-4 text-center rounded-lg min-h-[50px] sm:min-h-[55px] flex flex-col items-center justify-center transition-all duration-300";
+            resultContainer.style.backgroundColor = 'var(--card-sail)'; 
+
+            resultMessage.className = "text-base sm:text-2xl font-bold text-dark-brown/50";
+            resultMessage.textContent = "Awaiting address input...";
+            secondaryMessage.classList.add('hidden');
 
             // Reset Art and Juice Grab Button
             mainArt.src = CHECKER_ART_PLACEHOLDER;
             juiceGrabButton.classList.remove('active');
         }
 
-        /**
-         * Toggles the UI between the eligibility checker mode and the waiting list submission mode.
-         */
-        window.goToSubmissionMode = function() {
+        function goToSubmissionMode() {
             currentMode = 'submission';
-            setLoading(false);
 
             // Update Titles
             mainTitle.innerHTML = `<span class="w-3 h-3 bg-dark-brown rounded-full"></span><span>Final Juice for Lotls</span>`;
-            subTitle.textContent = 'Submit your wallet for a chance at GTD!'; 
+            subTitle.textContent = 'Submit your wallet for a chance at GTD!'; // Custom message for submission screen
 
             // Update Input and Button
-            walletInput.value = lastCheckedWallet; 
+            walletInput.value = lastCheckedWallet; // Pre-fill with the ineligible wallet
             walletInput.placeholder = "Your wallet for waiting list...";
             actionButton.textContent = "Submit";
-            actionButton.onclick = submitWalletForWaitingList; 
+            actionButton.onclick = submitWalletForWaitingList; // Change button action
+            walletInput.disabled = false; // Ensure input is enabled in submission mode
+            actionButton.disabled = false;
             
             // Update Result Area
-            updateResultDisplay(
-                "Submit your wallet below.", 
-                "text-base sm:text-2xl font-bold text-dark-brown/50", 
-                'bg-gray-50'
-            );
+            resultContainer.classList.remove('bg-green-100', 'border', 'border-green-400', 'shadow-lg', 'bg-red-100', 'border', 'border-red-400', 'bg-yellow-100', 'border', 'border-yellow-400');
+            resultContainer.classList.add('flex-col'); 
+            resultMessage.className = "text-base sm:text-2xl font-bold text-dark-brown/50";
+            resultMessage.textContent = "Submit your wallet below.";
             secondaryMessage.textContent = "Few random wallets will be added to GTD or FCFS soon!";
             secondaryMessage.classList.remove('hidden');
 
@@ -397,127 +315,20 @@
             juiceGrabButton.classList.remove('active');
         }
 
-        /**
-         * Handles the wallet submission for the waiting list using Firestore.
-         */
-        window.submitWalletForWaitingList = async function() {
+        function checkWallet() {
             const rawAddress = walletInput.value;
-            setLoading(true);
+            lastCheckedWallet = rawAddress; // Store for potential submission
 
-            // 1. Basic client-side validation for submission
-            if (!rawAddress || rawAddress.length < 10) {
-                setLoading(false);
-                updateResultDisplay(
-                    "Please enter a valid address.", 
-                    "text-base sm:text-xl font-bold text-yellow-700", 
-                    'bg-yellow-100 border-yellow-400', 
-                    true
-                );
-                return;
-            }
-
-            // 2. Wait for Firebase initialization to complete
-            if (!isFirebaseReady) {
-                console.log("Waiting for Firebase initialization to complete...");
-                try {
-                    await firebaseInitPromise; 
-                    console.log("Initialization complete. Proceeding with submission.");
-                } catch (error) {
-                     setLoading(false);
-                     updateResultDisplay(
-                        "System not ready. Initialization failed.", 
-                        "text-base sm:text-xl font-bold text-red-700", 
-                        'bg-red-100 border-red-400', 
-                        true
-                    );
-                     console.error("Firebase initialization failed during submission wait:", error);
-                     return; 
-                }
-            }
-
-            // 3. Final APP_ID check and path construction
-            if (!APP_ID || APP_ID === 'default-app-id') {
-                setLoading(false);
-                updateResultDisplay(
-                    "App ID missing. Cannot submit.", 
-                    "text-base sm:text-xl font-bold text-red-700", 
-                    'bg-red-100 border-red-400', 
-                    true
-                );
-                console.error("Submission blocked: APP_ID:", APP_ID);
-                return;
-            }
-            
-            const cleanedAddress = rawAddress.toLowerCase().trim();
-            // This is the collection path that MUST match your security rule: /artifacts/{appId}/public/data/waitingList
-            const collectionPath = `artifacts/${APP_ID}/public/data/waitingList`;
-
-            try {
-                // 4. Define the public collection path
-                const waitingListRef = collection(db, collectionPath);
-                
-                // CRITICAL LOGGING: Log the exact path being attempted
-                console.log("ATTEMPTING WRITE TO COLLECTION:", collectionPath);
-                console.log("DOCUMENT DATA:", { walletAddress: cleanedAddress, timestamp: new Date().toISOString() });
-                
-                // 5. Submit the wallet address.
-                await addDoc(waitingListRef, {
-                    walletAddress: cleanedAddress,
-                    timestamp: new Date().toISOString()
-                });
-
-                // 6. Success UI Update
-                setLoading(false);
-                updateResultDisplay(
-                    "Submitted Successfully!", 
-                    "text-xl sm:text-2xl font-extrabold text-green-700", 
-                    'bg-green-100 border-green-400'
-                );
-                secondaryMessage.textContent = "Your wallet is now on the waiting list!";
-                secondaryMessage.classList.remove('hidden');
-                
-                // Disable input/button after successful submission
-                walletInput.disabled = true;
-                actionButton.disabled = true;
-                actionButton.textContent = "Submitted";
-
-            } catch (error) {
-                // 7. Error UI Update
-                setLoading(false);
-                updateResultDisplay(
-                    "Submission Failed! (Check Console)", 
-                    "text-base sm:text-xl font-bold text-red-700", 
-                    'bg-red-100 border-red-400', 
-                    true
-                );
-                console.error("FINAL FAILURE: Error submitting wallet. Check path, rules, and network:", error);
-
-                // Re-enable button for retry
-                actionButton.disabled = false;
-                walletInput.disabled = false;
-            }
-        }
-
-
-        /**
-         * Checks the entered wallet address against both GTD and FCFS lists.
-         */
-        window.checkWallet = function() {
-            const rawAddress = walletInput.value;
-            lastCheckedWallet = rawAddress; 
-
-            // Reset UI for new check 
-            setLoading(false); 
-            juiceGrabButton.classList.remove('active'); 
+            // Reset UI for new check (this clears old result colors/borders)
+            resultContainer.className = "mt-5 sm:mt-6 p-3 sm:p-4 text-center rounded-lg min-h-[50px] sm:min-h-[55px] flex flex-col items-center justify-center transition-all duration-300";
+            secondaryMessage.classList.add('hidden');
+            juiceGrabButton.classList.remove('active'); // Hide button by default
 
             // 1. Basic Validation
             if (!rawAddress || rawAddress.length < 10) {
-                updateResultDisplay(
-                    "Please enter a valid address.", 
-                    "text-base sm:text-xl font-bold text-yellow-700", 
-                    'bg-yellow-100 border-yellow-400', 
-                    true
-                );
+                resultContainer.classList.add('bg-yellow-100', 'border', 'border-yellow-400');
+                resultMessage.className = "text-base sm:text-xl font-bold text-yellow-700";
+                resultMessage.textContent = "Please enter a valid address.";
                 return;
             }
 
@@ -525,12 +336,9 @@
             const cleanedAddress = rawAddress.toLowerCase().trim().replace(/^0x/, '');
 
             if (cleanedAddress.length < 5) {
-                updateResultDisplay(
-                    "Address format incorrect. Too short.", 
-                    "text-base sm:text-xl font-bold text-yellow-700", 
-                    'bg-yellow-100 border-yellow-400', 
-                    true
-                );
+                resultContainer.classList.add('bg-yellow-100', 'border', 'border-yellow-400');
+                resultMessage.className = "text-base sm:text-xl font-bold text-yellow-700";
+                resultMessage.textContent = "Address format incorrect. Too short.";
                 return;
             }
 
@@ -541,7 +349,6 @@
             let statusText = "";
             let statusColorClass = "";
             let secondaryText = "";
-            let containerClass = "";
 
             if (isGTD || isFCFS) {
                 // ELIGIBLE SCENARIOS
@@ -550,32 +357,29 @@
                 if (isGTD && isFCFS) {
                     statusText = "ELIGIBLE (GTD and FCFS)";
                     statusColorClass = "text-green-700";
-                    containerClass = 'bg-green-100 border-green-400';
+                    resultContainer.classList.add('bg-green-100', 'border', 'border-green-400', 'shadow-lg');
                 } else if (isGTD) {
                     statusText = "ELIGIBLE (GTD)";
                     statusColorClass = "text-green-700";
-                    containerClass = 'bg-green-100 border-green-400';
+                    resultContainer.classList.add('bg-green-100', 'border', 'border-green-400', 'shadow-lg');
                 } else if (isFCFS) {
                     statusText = "ELIGIBLE (FCFS)";
                     statusColorClass = "text-green-600";
-                    containerClass = 'bg-green-50 border-green-300';
+                    resultContainer.classList.add('bg-green-50', 'border', 'border-green-300', 'shadow-md');
                 }
             } else {
                 // INELIGIBLE SCENARIO
                 statusText = "INELIGIBLE";
                 secondaryText = "Sorry... You can try to grab that juice from below tho";
                 statusColorClass = "text-red-700";
-                containerClass = 'bg-red-100 border-red-400';
+                resultContainer.classList.add('bg-red-100', 'border', 'border-red-400', 'shadow-lg');
                 juiceGrabButton.classList.add('active'); // Activate the juice grab button for ineligible users
             }
 
             // 4. Update UI
-            updateResultDisplay(
-                statusText, 
-                `text-xl sm:text-2xl font-extrabold ${statusColorClass} animate-pulse`, 
-                containerClass, 
-                false
-            );
+            resultMessage.className = `text-xl sm:text-2xl font-extrabold ${statusColorClass} animate-pulse`;
+            resultMessage.textContent = statusText;
+            
             secondaryMessage.textContent = secondaryText;
             secondaryMessage.classList.remove('hidden'); 
         }
